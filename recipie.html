@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Recipe Finder</title>
+    <style>
+        /* ====== CSS Styling ====== */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #ffb347;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .logo {
+            width: 50px;
+            vertical-align: middle;
+        }
+        nav ul {
+            display: flex;
+            justify-content: center;
+            background-color: #ffa500;
+            padding: 10px 0;
+            list-style-type: none;
+            margin: 0;
+        }
+        nav ul li {
+            margin: 0 20px;
+        }
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        section {
+            padding: 20px;
+            margin: 10px;
+        }
+        .recipe-card, .favorite-card {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .recipe-card:hover {
+            transform: scale(1.02);
+            background-color: #fff3e0;
+        }
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .collapsible {
+            cursor: pointer;
+            background-color: #eee;
+            border: none;
+            padding: 10px;
+            text-align: left;
+            outline: none;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        .content {
+            display: none;
+            padding: 10px;
+            border-top: 1px solid #ccc;
+        }
+        .favorite-card button {
+            background-color: red;
+            color: white;
+        }
+        .category-filters label {
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>Delicious Recipes</h1>
+        <img src="https://via.placeholder.com/50" alt="Cooking Logo" class="logo">
+    </header>
+
+    <!-- Navigation -->
+    <nav>
+        <ul>
+            <li><a href="#search">Home</a></li>
+            <li><a href="#results">Recipes</a></li>
+            <li><a href="#favorites">Favorites</a></li>
+        </ul>
+    </nav>
+
+    <!-- Search Panel -->
+    <section id="search">
+        <h2>Find Your Recipe</h2>
+        <input type="text" id="searchInput" placeholder="Enter ingredient or recipe name">
+        <div class="category-filters">
+            <label><input type="checkbox" value="Breakfast"> Breakfast</label>
+            <label><input type="checkbox" value="Lunch"> Lunch</label>
+            <label><input type="checkbox" value="Dessert"> Dessert</label>
+        </div>
+        <button id="searchBtn">Search</button>
+        <p id="searchMessage"></p>
+    </section>
+
+    <!-- Recipe Results -->
+    <section id="results">
+        <h2>Recipe Results</h2>
+        <div id="recipeList"></div>
+    </section>
+
+    <!-- Favorites -->
+    <section id="favorites">
+        <h2>My Favorites</h2>
+        <div id="favoritesList"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Delicious Recipes | Contact: info@example.com</p>
+    </footer>
+
+    <script>
+        // ====== JavaScript ======
+        const recipes = [
+            {name:"Pancakes", category:"Breakfast", ingredients:["flour","milk","eggs","sugar"], instructions:"Mix ingredients and cook on skillet.", image:"https://via.placeholder.com/150"},
+            {name:"Grilled Cheese Sandwich", category:"Lunch", ingredients:["bread","cheese","butter"], instructions:"Butter bread, add cheese, and grill until golden.", image:"https://via.placeholder.com/150"},
+            {name:"Chocolate Cake", category:"Dessert", ingredients:["flour","sugar","cocoa","eggs","butter"], instructions:"Mix ingredients, bake at 350°F for 30 min.", image:"https://via.placeholder.com/150"}
+        ];
+
+        const searchInput = document.getElementById("searchInput");
+        const searchBtn = document.getElementById("searchBtn");
+        const recipeList = document.getElementById("recipeList");
+        const favoritesList = document.getElementById("favoritesList");
+        const searchMessage = document.getElementById("searchMessage");
+
+        let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+
+        function displayFavorites(){
+            favoritesList.innerHTML = "";
+            favorites.forEach((recipe,index)=>{
+                const card=document.createElement("div");
+                card.classList.add("favorite-card");
+                card.innerHTML=`
+                    <h3>${recipe.name}</h3>
+                    <img src="${recipe.image}" alt="${recipe.name}" width="100">
+                    <button onclick="removeFavorite(${index})">Remove</button>
+                `;
+                favoritesList.appendChild(card);
+            });
+        }
+
+        function removeFavorite(index){
+            favorites.splice(index,1);
+            localStorage.setItem("favorites",JSON.stringify(favorites));
+            displayFavorites();
+        }
+
+        function displayRecipes(filteredRecipes){
+            recipeList.innerHTML = "";
+            if(filteredRecipes.length===0){
+                searchMessage.textContent="No recipes found. Try another ingredient or category!";
+                return;
+            }
+            searchMessage.textContent="";
+
+            filteredRecipes.forEach(recipe=>{
+                const card=document.createElement("div");
+                card.classList.add("recipe-card");
+                card.innerHTML=`
+                    <h3>${recipe.name}</h3>
+                    <img src="${recipe.image}" alt="${recipe.name}" width="150">
+                    <p><strong>Category:</strong> ${recipe.category}</p>
+                    <p><strong>Ingredients:</strong> ${recipe.ingredients.join(", ")}</p>
+                    <button class="collapsible">Show Instructions</button>
+                    <div class="content">${recipe.instructions}</div>
+                    <button>Add to Favorites</button>
+                `;
+                const collapsible = card.querySelector(".collapsible");
+                const content = card.querySelector(".content");
+                collapsible.addEventListener("click",()=>{ content.style.display= content.style.display==="block"? "none":"block"; });
+
+                const addBtn = card.querySelector("button:last-of-type");
+                addBtn.addEventListener("click",()=>{
+                    if(favorites.some(fav=>fav.name===recipe.name)){
+                        alert("Recipe already in favorites!");
+                    }else{
+                        favorites.push(recipe);
+                        localStorage.setItem("favorites",JSON.stringify(favorites));
+                        displayFavorites();
+                    }
+                });
+                recipeList.appendChild(card);
+            });
+        }
+
+        searchBtn.addEventListener("click",()=>{
+            const query = searchInput.value.trim().toLowerCase();
+            const checkedCategories = Array.from(document.querySelectorAll(".category-filters input:checked")).map(cb=>cb.value);
+
+            if(!query && checkedCategories.length===0){
+                alert("Please enter an ingredient or select a category!");
+                return;
+            }
+
+            const filtered = recipes.filter(recipe=>{
+                const matchQuery = query==="" || recipe.name.toLowerCase().includes(query) || recipe.ingredients.some(ing=>ing.toLowerCase().includes(query));
+                const matchCategory = checkedCategories.length===0 || checkedCategories.includes(recipe.category);
+                return matchQuery && matchCategory;
+            });
+
+            displayRecipes(filtered);
+        });
+
+        displayFavorites();
+        displayRecipes(recipes);
+    </script>
+
+</body>
+</html>
